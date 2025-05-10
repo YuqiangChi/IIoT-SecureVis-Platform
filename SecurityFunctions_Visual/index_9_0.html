@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于大模型的网络安全功能柔性重组智能监控系统</title>
+    <!-- 从CDN加载Vue生产版本 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.prod.js"></script>
+    <!-- 从CDN加载Element Plus -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.2.0/dist/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.2.0/dist/index.full.js"></script>
+    <!-- 从CDN加载ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    <!-- 加载图标库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --secondary-color: #0e2954;
+            --accent-color: #2563eb;
+            --danger-color: #dc2626;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --info-color: #0891b2;
+            --dark-color: #111827;
+            --light-color: #f9fafb;
+            --gray-color: #6b7280;
+            --card-bg: #ffffff;
+            --body-bg: #f3f4f6;
+            --border-radius: 8px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--body-bg);
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .agv-status-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            margin-right: 15px;
+            width: 220px;
+            height: 50px;
+        }
+
+        .agv-icon {
+            width: 32px;
+            height: 32px;
+            background-color: var(--success-color);
+            border-radius: 6px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .agv-icon.inactive {
+            background-color: var(--danger-color);
+        }
+
+        .agv-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .agv-text .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .agv-text .status-dot.active {
+            background-color: var(--success-color);
+        }
+
+        .agv-text .status-dot.inactive {
+            background-color: var(--danger-color);
+        }
+
+        .title-bar {
+            flex: 1;
+            height: 50px;
+            background: linear-gradient(to right, #172554, #1e3a8a, #1e40af);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .title-bar::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+        }
+
+        .title-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-right: 15px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .title-text {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .attack-button-container {
+            width: 220px;
+            margin-left: 15px;
+        }
+
+        .attack-button {
+            width: 100%;
+            height: 50px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #dc2626, #ef4444);
+            border: none;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .attack-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(220, 38, 38, 0.3);
+        }
+
+        .attack-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .attack-button i {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .content-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            background-color: #f8fafc;
+        }
+
+        .card-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .card-header i {
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+
+        .card-content {
+            padding: 12px;
+        }
+
+        .resource-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .resource-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .resource-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .resource-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .resource-title i {
+            margin-right: 5px;
+            font-size: 11px;
+        }
+
+        .resource-value {
+            font-size: 13px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .resource-limit {
+            font-weight: 400;
+            color: var(--gray-color);
+            font-size: 11px;
+        }
+
+        .resource-chart {
+            height: 110px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            flex-grow: 1;
+        }
+
+        .security-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+        }
+
+        .gauge-row {
+            display: flex;
+            justify-content: space-around;
+            flex: 1;
+            align-items: center;
+        }
+
+        .gauge-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gauge-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .gauge-status {
+            font-size: 12px;
+            color: var(--gray-color);
+            margin-top: 8px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .log-section {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            height: calc(100vh - 455px);
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .log-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            background-color: #f8fafc;
+        }
+
+        .log-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .log-header i {
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+
+        .log-container {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #1a1d21;
+            padding: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #e0e0e0;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .log-item {
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin-bottom: 3px;
+        }
+
+        .log-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .timestamp {
+            color: #888;
+            margin-right: 6px;
+        }
+
+        .log-type {
+            margin-right: 6px;
+            font-weight: bold;
+            border-radius: 2px;
+            padding: 1px 3px;
+        }
+
+        .log-type.info {
+            background-color: rgba(8, 145, 178, 0.2);
+            color: #38bdf8;
+        }
+
+        .log-type.warning {
+            background-color: rgba(217, 119, 6, 0.2);
+            color: #f59e0b;
+        }
+
+        .log-type.error {
+            background-color: rgba(220, 38, 38, 0.2);
+            color: #f87171;
+        }
+
+        .log-type.success {
+            background-color: rgba(5, 150, 105, 0.2);
+            color: #10b981;
+        }
+
+        .log-content {
+            color: #f3f4f6;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .risk-indicator {
+            color: white;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        .risk-low {
+            background-color: var(--success-color);
+        }
+
+        .risk-medium {
+            background-color: var(--warning-color);
+        }
+
+        .risk-high {
+            background-color: var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- 全新设计的头部区域 - 更加醒目且协调 -->
+            <div class="header-container">
+                <div class="agv-status-card">
+                    <div class="agv-icon" :class="{ 'inactive': !agvActive }">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="agv-text">
+                        <span class="status-dot" :class="agvActive ? 'active' : 'inactive'"></span>
+                        {{ agvActive ? 'AGV 正常运行中' : 'AGV 异常停止' }}
+                    </div>
+                </div>
+
+                <div class="title-bar">
+                    <div class="title-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="title-text">
+                        基于大模型的网络安全功能柔性重组智能监控系统
+                    </div>
+                </div>
+
+                <div class="attack-button-container">
+                    <button class="attack-button" @click="triggerAttack" :disabled="isAttacking" :class="{ 'pulse': !isAttacking }">
+                        <i class="fas" :class="isAttacking ? 'fa-spinner fa-spin' : 'fa-bolt'"></i>
+                        {{ isAttacking ? '攻击进行中...' : '发起网络攻击模拟' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- 容器资源监控和安全能力展示 -->
+            <div class="content-row">
+                <!-- 左侧：容器资源监控 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-microchip"></i> 容器资源监控</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="resource-grid">
+                            <!-- IDS容器CPU使用率 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-search"></i> IDS容器CPU使用率
+                                    </div>
+                                    <div class="resource-value">
+                                        {{ idsCpuUsage.toFixed(2) }}%
+                                        <span class="resource-limit">/ 100%</span>
+                                    </div>
+                                </div>
+                                <div id="idsCpuChart" class="resource-chart"></div>
+                            </div>
+
+                            <!-- 防火墙容器CPU使用率 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-fire-alt"></i> 防火墙容器CPU使用率
+                                    </div>
+                                    <div class="resource-value">
+                                        {{ fwCpuUsage.toFixed(2) }}%
+                                        <span class="resource-limit">/ 100%</span>
+                                    </div>
+                                </div>
+                                <div id="fwCpuChart" class="resource-chart"></div>
+                            </div>
+
+                            <!-- IDS容器内存使用量 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-memory"></i> IDS容器内存使用量
+                                    </div>
+                                    <div class="resource-value">
+                                        {{ idsMemoryUsage.toFixed(2) }}MB
+                                        <span class="resource-limit">/ 512MB</span>
+                                    </div>
+                                </div>
+                                <div id="idsMemoryChart" class="resource-chart"></div>
+                            </div>
+
+                            <!-- 防火墙容器内存使用量 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-memory"></i> 防火墙容器内存使用量
+                                    </div>
+                                    <div class="resource-value">
+                                        {{ fwMemoryUsage.toFixed(2) }}MB
+                                        <span class="resource-limit">/ 512MB</span>
+                                    </div>
+                                </div>
+                                <div id="fwMemoryChart" class="resource-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：容器安全能力展示 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shield-alt"></i> 容器安全能力</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="security-container">
+                            <div class="gauge-row">
+                                <!-- IDS检测率 -->
+                                <div class="gauge-item">
+                                    <div class="gauge-title">
+                                        <i class="fas fa-radar"></i> IDS检测率
+                                    </div>
+                                    <el-progress type="dashboard" :percentage="idsSecurity" :color="getSecurityColor(idsSecurity)" :stroke-width="10" :width="120"></el-progress>
+                                    <div class="gauge-status">状态: {{ idsActive ? '运行中' : '未启动' }}</div>
+                                </div>
+
+                                <!-- 防火墙拦截能力 -->
+                                <div class="gauge-item">
+                                    <div class="gauge-title">
+                                        <i class="fas fa-ban"></i> 防火墙拦截能力
+                                    </div>
+                                    <el-progress type="dashboard" :percentage="fwSecurity" :color="getSecurityColor(fwSecurity)" :stroke-width="10" :width="120"></el-progress>
+                                    <div class="gauge-status">状态: 运行中</div>
+                                </div>
+                            </div>
+
+                            <!-- 安全统计数据 -->
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <div class="stat-label">已检测攻击</div>
+                                    <div class="stat-value">{{ attacksDetected }}</div>
+                                </div>
+
+                                <div class="stat-item">
+                                    <div class="stat-label">已阻断攻击</div>
+                                    <div class="stat-value">{{ attacksBlocked }}</div>
+                                </div>
+
+                                <div class="stat-item">
+                                    <div class="stat-label">系统风险等级</div>
+                                    <div class="stat-value">
+                                        {{ riskLevel }}
+                                        <span class="risk-indicator" :class="getRiskClass()">
+                                            {{ getRiskShortName() }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 网安大模型日志 - 使用精确到秒的时间戳 -->
+            <div class="log-section">
+                <div class="log-header">
+                    <h3><i class="fas fa-terminal"></i> 网安大模型日志</h3>
+                </div>
+                <div class="log-container" id="logContainer">
+                    <div v-for="(log, index) in logs" :key="index" class="log-item">
+                        <span class="timestamp">{{ log.timestamp }}</span>
+                        <span class="log-type" :class="log.type">{{ log.type.toUpperCase() }}</span>
+                        <span class="log-content">{{ log.content }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 使用Vue 3 Composition API
+        const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                // 状态数据
+                const agvActive = ref(true);
+                const idsActive = ref(false);  // IDS初始未启动
+                const idsSecurity = ref(0);    // IDS初始检测率为0
+                const fwSecurity = ref(85);    // 防火墙初始拦截能力为85%
+                const isAttacking = ref(false);
+                const logs = ref([]);
+
+                // 安全统计数据
+                const attacksDetected = ref(0);
+                const attacksBlocked = ref(0);
+                const riskLevel = ref('低');
+                const riskLevelColor = ref('#059669');
+
+                // 资源使用数据
+                const idsCpuUsage = ref(0);
+                const idsMemoryUsage = ref(0);
+                const fwCpuUsage = ref(25);
+                const fwMemoryUsage = ref(128);
+
+                // 获取风险等级样式类
+                const getRiskClass = () => {
+                    if (riskLevel.value === '低') return 'risk-low';
+                    if (riskLevel.value === '中') return 'risk-medium';
+                    return 'risk-high';
+                };
+
+                // 获取风险等级缩写
+                const getRiskShortName = () => {
+                    if (riskLevel.value === '低') return 'L';
+                    if (riskLevel.value === '中') return 'M';
+                    return 'H';
+                };
+
+                // 模拟日期
+                const currentSimulatedDate = ref(new Date());
+
+                // 时间序列数据
+                const timeData = [];
+                const idsCpuData = [];
+                const idsMemoryData = [];
+                const fwCpuData = [];
+                const fwMemoryData = [];
+
+                // 图表实例
+                let idsCpuChart = null;
+                let idsMemoryChart = null;
+                let fwCpuChart = null;
+                let fwMemoryChart = null;
+
+                // 初始化时间数据
+                const initTimeData = () => {
+                    const now = currentSimulatedDate.value;
+                    for (let i = 0; i < 50; i++) {
+                        const time = new Date(now - (49 - i) * 300000); // 5分钟间隔
+                        timeData.push(formatChartTime(time));
+                        idsCpuData.push(0);  // IDS初始未启动，CPU使用率为0
+                        idsMemoryData.push(0);  // IDS初始未启动，内存使用率为0
+                        fwCpuData.push(Math.floor(20 + Math.random() * 10));  // 防火墙初始CPU使用率为20-30%
+                        fwMemoryData.push(Math.floor(110 + Math.random() * 40));  // 防火墙初始内存使用量为110-150MB
+                    }
+                };
+
+                // 模拟时间前进（支持分钟和秒）
+                const advanceTime = (value, unit = 'minutes') => {
+                    if (unit === 'minutes') {
+                        currentSimulatedDate.value = new Date(currentSimulatedDate.value.getTime() + value * 60000);
+                    } else if (unit === 'seconds') {
+                        currentSimulatedDate.value = new Date(currentSimulatedDate.value.getTime() + value * 1000);
+                    }
+                    return formatTime(currentSimulatedDate.value);
+                };
+
+                // 初始化资源监控图表
+                const initResourceCharts = () => {
+                    // 通用图表配置
+                    const commonChartConfig = {
+                        grid: {
+                            left: '5%',
+                            right: '5%',
+                            bottom: '12%',
+                            top: '5%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: timeData,
+                            axisLine: {
+                                lineStyle: {
+                                    color: '#ddd'
+                                }
+                            },
+                            axisTick: {
+                                show: false
+                            },
+                            splitLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#eee',
+                                    type: 'dashed'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            borderColor: '#e0e0e0',
+                            textStyle: {
+                                color: '#333'
+                            }
+                        }
+                    };
+
+                    // CPU图表配置
+                    const cpuChartConfig = {
+                        ...commonChartConfig,
+                        yAxis: {
+                            type: 'value',
+                            min: 0,
+                            max: 100,
+                            name: 'CPU(%)',
+                            nameTextStyle: {
+                                color: '#666',
+                                padding: [0, 0, 0, 0]
+                            },
+                            axisLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#ddd'
+                                }
+                            },
+                            axisTick: {
+                                show: false
+                            },
+                            splitLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#eee',
+                                    type: 'dashed'
+                                }
+                            }
+                        },
+                        series: [{
+                            name: 'CPU使用率',
+                            type: 'line',
+                            smooth: true,
+                            symbol: 'none',
+                            lineStyle: {
+                                width: 2,
+                                color: '#3b82f6'
+                            },
+                            areaStyle: {
+                                opacity: 0.2,
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#3b82f6' },
+                                    { offset: 1, color: 'rgba(59, 130, 246, 0.1)' }
+                                ])
+                            }
+                        }]
+                    };
+
+                    // 内存图表配置
+                    const memoryChartConfig = {
+                        ...commonChartConfig,
+                        yAxis: {
+                            type: 'value',
+                            min: 0,
+                            max: 512,
+                            name: '内存(MB)',
+                            nameTextStyle: {
+                                color: '#666',
+                                padding: [0, 0, 0, 0]
+                            },
+                            axisLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#ddd'
+                                }
+                            },
+                            axisTick: {
+                                show: false
+                            },
+                            splitLine: {
+                                show: true,
+                                lineStyle: {
+                                    color: '#eee',
+                                    type: 'dashed'
+                                }
+                            }
+                        },
+                        series: [{
+                            name: '内存使用量',
+                            type: 'line',
+                            smooth: true,
+                            symbol: 'none',
+                            lineStyle: {
+                                width: 2,
+                                color: '#10b981'
+                            },
+                            areaStyle: {
+                                opacity: 0.2,
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#10b981' },
+                                    { offset: 1, color: 'rgba(16, 185, 129, 0.1)' }
+                                ])
+                            }
+                        }]
+                    };
+
+                    // 初始化所有图表
+                    idsCpuChart = echarts.init(document.getElementById('idsCpuChart'));
+                    const idsCpuConfig = JSON.parse(JSON.stringify(cpuChartConfig));
+                    idsCpuConfig.series[0].data = idsCpuData;
+                    idsCpuConfig.tooltip.formatter = '{b}<br />CPU使用率: {c}%';
+                    idsCpuChart.setOption(idsCpuConfig);
+
+                    idsMemoryChart = echarts.init(document.getElementById('idsMemoryChart'));
+                    const idsMemoryConfig = JSON.parse(JSON.stringify(memoryChartConfig));
+                    idsMemoryConfig.series[0].data = idsMemoryData;
+                    idsMemoryConfig.tooltip.formatter = '{b}<br />内存使用量: {c}MB';
+                    idsMemoryChart.setOption(idsMemoryConfig);
+
+                    fwCpuChart = echarts.init(document.getElementById('fwCpuChart'));
+                    const fwCpuConfig = JSON.parse(JSON.stringify(cpuChartConfig));
+                    fwCpuConfig.series[0].data = fwCpuData;
+                    fwCpuConfig.tooltip.formatter = '{b}<br />CPU使用率: {c}%';
+                    fwCpuChart.setOption(fwCpuConfig);
+
+                    fwMemoryChart = echarts.init(document.getElementById('fwMemoryChart'));
+                    const fwMemoryConfig = JSON.parse(JSON.stringify(memoryChartConfig));
+                    fwMemoryConfig.series[0].data = fwMemoryData;
+                    fwMemoryConfig.tooltip.formatter = '{b}<br />内存使用量: {c}MB';
+                    fwMemoryChart.setOption(fwMemoryConfig);
+                };
+
+                // 更新资源监控图表
+                const updateResourceCharts = () => {
+                    if (isAttacking.value) return;
+
+                    // 更新模拟时间 - 每5分钟
+                    advanceTime(5);
+
+                    timeData.shift();
+                    timeData.push(formatChartTime(currentSimulatedDate.value));
+
+                    idsCpuData.shift();
+                    idsMemoryData.shift();
+                    fwCpuData.shift();
+                    fwMemoryData.shift();
+
+                    // 正常情况下随机波动
+                    idsCpuData.push(idsActive.value ? Math.floor(20 + Math.random() * 10) : 0);
+                    idsMemoryData.push(idsActive.value ? Math.floor(100 + Math.random() * 50) : 0);
+                    fwCpuData.push(Math.floor(20 + Math.random() * 10));
+                    fwMemoryData.push(Math.floor(120 + Math.random() * 30));
+
+                    // 更新当前CPU和内存使用
+                    idsCpuUsage.value = idsActive.value ? idsCpuData[idsCpuData.length - 1] : 0;
+                    idsMemoryUsage.value = idsActive.value ? idsMemoryData[idsMemoryData.length - 1] : 0;
+                    fwCpuUsage.value = fwCpuData[fwCpuData.length - 1];
+                    fwMemoryUsage.value = fwMemoryData[fwMemoryData.length - 1];
+
+                    // 更新所有图表
+                    updateAllCharts();
+                };
+
+                // 更新所有图表
+                const updateAllCharts = () => {
+                    if (idsCpuChart) {
+                        idsCpuChart.setOption({
+                            xAxis: { data: timeData },
+                            series: [{ data: idsCpuData }]
+                        });
+                    }
+
+                    if (idsMemoryChart) {
+                        idsMemoryChart.setOption({
+                            xAxis: { data: timeData },
+                            series: [{ data: idsMemoryData }]
+                        });
+                    }
+
+                    if (fwCpuChart) {
+                        fwCpuChart.setOption({
+                            xAxis: { data: timeData },
+                            series: [{ data: fwCpuData }]
+                        });
+                    }
+
+                    if (fwMemoryChart) {
+                        fwMemoryChart.setOption({
+                            xAxis: { data: timeData },
+                            series: [{ data: fwMemoryData }]
+                        });
+                    }
+                };
+
+                // 添加新日志
+                const addLog = (type, content) => {
+                    logs.value.push({
+                        timestamp: formatTime(currentSimulatedDate.value),
+                        type,
+                        content
+                    });
+
+                    // 确保日志滚动到最新的消息
+                    nextTick(() => {
+                        const logContainer = document.getElementById('logContainer');
+                        if (logContainer) {
+                            logContainer.scrollTop = logContainer.scrollHeight;
+                        }
+                    });
+
+                    // 保持日志数量在合理范围内
+                    if (logs.value.length > 100) {
+                        logs.value.shift();
+                    }
+                };
+
+                // 格式化时间 (小时:分钟:秒格式) - 用于日志
+                const formatTime = (date) => {
+                    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date.getSeconds().toString().padStart(2, '0')}`;
+                };
+
+                // 格式化时间 (小时:分钟格式) - 用于图表
+                const formatChartTime = (date) => {
+                    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                };
+
+                // 获取安全能力的颜色
+                const getSecurityColor = (value) => {
+                    if (value < 30) return '#dc2626';
+                    if (value < 70) return '#d97706';
+                    return '#059669';
+                };
+
+                // 更新风险等级
+                const updateRiskLevel = (level) => {
+                    if (level === 'low') {
+                        riskLevel.value = '低';
+                        riskLevelColor.value = '#059669';
+                    } else if (level === 'medium') {
+                        riskLevel.value = '中';
+                        riskLevelColor.value = '#d97706';
+                    } else if (level === 'high') {
+                        riskLevel.value = '高';
+                        riskLevelColor.value = '#dc2626';
+                    }
+                };
+
+                // 创建AGV工作计划
+                const createAgvWorkSchedule = () => {
+                    // AGV工作流程，按照合理的时间顺序
+                    const workSchedule = [
+                        { minutes: 15, action: "AGV开始执行搬运任务：制造区 → 装配区" },
+                        { minutes: 45, action: "AGV到达装配区，开始卸载物料" },
+                        { minutes: 15, action: "AGV卸载完成，准备返回" },
+                        { minutes: 45, action: "AGV返回制造区，准备充电" },
+                        { minutes: 120, action: "AGV完成充电，电量100%" }, // 充电2小时
+                        { minutes: 10, action: "AGV开始执行巡检任务" },
+                        { minutes: 60, action: "AGV完成巡检，发现0处异常" },
+                        { minutes: 30, action: "AGV接收新的配送任务：仓库 → 制造区" },
+                        { minutes: 40, action: "AGV到达仓库，开始装载物料" },
+                        { minutes: 20, action: "AGV装载完成，前往制造区" },
+                        { minutes: 35, action: "AGV到达制造区，开始卸载物料" }
+                    ];
+
+                    return workSchedule;
+                };
+
+                // 模拟AGV小车动作的正常日志
+                const startAgvWorkSimulation = () => {
+                    if (!agvActive.value) return; // AGV不可用时不生成正常日志
+
+                    const workSchedule = createAgvWorkSchedule();
+                    let currentTaskIndex = 0;
+
+                    const executeNextTask = () => {
+                        if (!agvActive.value || isAttacking.value) {
+                            // 如果AGV不可用或者正在攻击中，则暂停工作流程
+                            setTimeout(() => {
+                                if (agvActive.value && !isAttacking.value) {
+                                    executeNextTask(); // 恢复后继续
+                                } else {
+                                    setTimeout(executeNextTask, 5000); // 继续检查
+                                }
+                            }, 5000);
+                            return;
+                        }
+
+                        const task = workSchedule[currentTaskIndex];
+
+                        // 添加任务日志
+                        addLog('info', task.action);
+
+                        // 前进时间 - 使用分钟单位
+                        advanceTime(task.minutes);
+
+                        // 更新图表数据
+                        timeData.shift();
+                        timeData.push(formatChartTime(currentSimulatedDate.value));
+
+                        idsCpuData.shift();
+                        idsMemoryData.shift();
+                        fwCpuData.shift();
+                        fwMemoryData.shift();
+
+                        idsCpuData.push(idsActive.value ? Math.floor(20 + Math.random() * 10) : 0);
+                        idsMemoryData.push(idsActive.value ? Math.floor(100 + Math.random() * 50) : 0);
+                        fwCpuData.push(Math.floor(20 + Math.random() * 10));
+                        fwMemoryData.push(Math.floor(120 + Math.random() * 30));
+
+                        // 更新当前CPU和内存使用
+                        idsCpuUsage.value = idsActive.value ? idsCpuData[idsCpuData.length - 1] : 0;
+                        idsMemoryUsage.value = idsActive.value ? idsMemoryData[idsMemoryData.length - 1] : 0;
+                        fwCpuUsage.value = fwCpuData[fwCpuData.length - 1];
+                        fwMemoryUsage.value = fwMemoryData[fwMemoryData.length - 1];
+
+                        // 更新所有图表
+                        updateAllCharts();
+
+                        // 移动到下一个任务
+                        currentTaskIndex = (currentTaskIndex + 1) % workSchedule.length;
+
+                        // 随机添加一些延迟，使任务执行看起来更自然
+                        setTimeout(executeNextTask, 8000 + Math.random() * 7000);
+                    };
+
+                    // 开始执行第一个任务
+                    executeNextTask();
+                };
+
+                // 触发网络攻击 - 优化为1分钟内完成
+                const triggerAttack = () => {
+                    if (isAttacking.value) return;
+
+                    isAttacking.value = true;
+                    attacksDetected.value++;
+
+                    // 发送攻击开始的提醒
+                    ElementPlus.ElMessage({
+                        type: 'warning',
+                        message: '检测到网络攻击！启动安全防御机制...',
+                        showClose: true,
+                        duration: 5000
+                    });
+
+                    // 记录攻击日志
+                    addLog('warning', '检测到疑似网络扫描活动，可能是攻击准备阶段');
+                    updateRiskLevel('medium');
+
+                    // 修改为以秒为单位的攻击阶段，整个过程控制在1分钟内
+                    const phases = [
+                        // 阶段1：攻击开始，防火墙开始应对但能力下降 (0-5秒)
+                        {
+                            idsSecurity: 0,
+                            fwSecurity: 70,
+                            idsCpu: 0,
+                            idsMem: 0,
+                            fwCpu: 60,
+                            fwMem: 180,
+                            log: '检测到大量异常TCP连接请求，防火墙开始过滤',
+                            agvStatus: true,
+                            idsStatus: false,
+                            seconds: 5,
+                            risk: 'medium'
+                        },
+
+                        // 阶段2：防火墙继续抵抗，但能力持续下降 (5-10秒)
+                        {
+                            idsSecurity: 0,
+                            fwSecurity: 55,
+                            idsCpu: 0,
+                            idsMem: 0,
+                            fwCpu: 75,
+                            fwMem: 220,
+                            log: '防火墙检测到未授权访问尝试，可能针对AGV控制系统',
+                            agvStatus: true,
+                            idsStatus: false,
+                            seconds: 5,
+                            risk: 'medium'
+                        },
+
+                        // 阶段3：防火墙能力急剧下降 (10-15秒)
+                        {
+                            idsSecurity: 0,
+                            fwSecurity: 40,
+                            idsCpu: 0,
+                            idsMem: 0,
+                            fwCpu: 90,
+                            fwMem: 350,
+                            log: '防火墙资源消耗过高，检测能力下降，发现恶意软件特征',
+                            agvStatus: true,
+                            idsStatus: false,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段4：防火墙即将失效，AGV开始受到影响 (15-20秒)
+                        {
+                            idsSecurity: 0,
+                            fwSecurity: 25,
+                            idsCpu: 0,
+                            idsMem: 0,
+                            fwCpu: 98,
+                            fwMem: 450,
+                            log: '防火墙即将过载，检测到针对AGV的异常指令',
+                            agvStatus: true,
+                            idsStatus: false,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段5：防火墙能力低于20%，AGV瘫痪 (20-25秒)
+                        {
+                            idsSecurity: 0,
+                            fwSecurity: 15,
+                            idsCpu: 0,
+                            idsMem: 0,
+                            fwCpu: 100,
+                            fwMem: 490,
+                            log: '防火墙能力严重不足，AGV接收到异常停止指令，已紧急停车',
+                            agvStatus: false,
+                            idsStatus: false,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段6：大模型检测到问题，开始部署IDS (25-30秒)
+                        {
+                            idsSecurity: 0,
+                            fwSecurity: 15,
+                            idsCpu: 5,
+                            idsMem: 50,
+                            fwCpu: 100,
+                            fwMem: 490,
+                            log: '大模型检测到网络态势异常，开始部署IDS安全容器进行深度分析',
+                            agvStatus: false,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段7：IDS启动，开始检测 (30-35秒)
+                        {
+                            idsSecurity: 25,
+                            fwSecurity: 18,
+                            idsCpu: 45,
+                            idsMem: 150,
+                            fwCpu: 95,
+                            fwMem: 450,
+                            log: 'IDS容器已启动，开始深度数据包分析，学习攻击特征',
+                            agvStatus: false,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段8：IDS检测率提高，下发重组策略 (35-40秒)
+                        {
+                            idsSecurity: 60,
+                            fwSecurity: 25,
+                            idsCpu: 75,
+                            idsMem: 250,
+                            fwCpu: 90,
+                            fwMem: 425,
+                            log: '大模型下发安全功能柔性重组策略：IDS+FW联合防御，优化检测规则',
+                            agvStatus: false,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段9：IDS检测率继续提高，防火墙开始恢复 (40-45秒)
+                        {
+                            idsSecurity: 85,
+                            fwSecurity: 40,
+                            idsCpu: 90,
+                            idsMem: 350,
+                            fwCpu: 85,
+                            fwMem: 400,
+                            log: 'IDS成功识别攻击特征，开始向防火墙推送新规则',
+                            agvStatus: false,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'high'
+                        },
+
+                        // 阶段10：IDS检测率接近完善，防火墙继续恢复 (45-50秒)
+                        {
+                            idsSecurity: 95,
+                            fwSecurity: 65,
+                            idsCpu: 80,
+                            idsMem: 380,
+                            fwCpu: 70,
+                            fwMem: 350,
+                            log: 'IDS+防火墙联合防御生效，开始隔离恶意控制流量',
+                            agvStatus: false,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'medium'
+                        },
+
+                        // 阶段11：IDS检测率达到100%，防火墙能力大幅提升 (50-55秒)
+                        {
+                            idsSecurity: 100,
+                            fwSecurity: 85,
+                            idsCpu: 70,
+                            idsMem: 400,
+                            fwCpu: 60,
+                            fwMem: 300,
+                            log: 'IDS检测率达到100%，攻击特征完全识别，防火墙规则优化完成',
+                            agvStatus: false,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'medium'
+                        },
+
+                        // 阶段12：攻击被完全阻断，AGV恢复 (55-60秒)
+                        {
+                            idsSecurity: 100,
+                            fwSecurity: 95,
+                            idsCpu: 40,
+                            idsMem: 320,
+                            fwCpu: 40,
+                            fwMem: 220,
+                            log: '安全策略验证有效，攻击已被完全阻断，AGV恢复正常运行',
+                            agvStatus: true,
+                            idsStatus: true,
+                            seconds: 5,
+                            risk: 'low'
+                        }
+                    ];
+
+                    const executePhase = (index) => {
+                        if (index >= phases.length) {
+                            // 攻击结束
+                            isAttacking.value = false;
+                            ElementPlus.ElMessage({
+                                type: 'success',
+                                message: '安全功能柔性重组成功！攻击已被阻断，系统恢复正常',
+                                showClose: true,
+                                duration: 5000
+                            });
+                            addLog('success', '大模型安全功能柔性重组成功，IDS+防火墙联合防御机制将继续运行');
+                            attacksBlocked.value++;
+                            return;
+                        }
+
+                        const phase = phases[index];
+
+                        // 前进时间 - 使用秒钟单位
+                        advanceTime(phase.seconds, 'seconds');
+
+                        // 更新IDS状态
+                        if (idsActive.value !== phase.idsStatus) {
+                            idsActive.value = phase.idsStatus;
+                            if (idsActive.value) {
+                                addLog('info', 'IDS安全容器已启动，开始深度数据包分析');
+                            }
+                        }
+
+                        // 更新AGV状态
+                        if (agvActive.value !== phase.agvStatus) {
+                            agvActive.value = phase.agvStatus;
+                            if (!agvActive.value) {
+                                addLog('error', 'AGV异常停止，检测到未授权控制指令');
+                                ElementPlus.ElMessage({
+                                    type: 'error',
+                                    message: 'AGV异常停止！检测到未授权控制指令',
+                                    showClose: true,
+                                    duration: 5000
+                                });
+                            } else if (phase.idsStatus) {  // 只有在IDS启动后AGV恢复才特别提示
+                                addLog('success', 'AGV恢复正常运行状态，安全功能柔性重组防御成功');
+                                ElementPlus.ElMessage({
+                                    type: 'success',
+                                    message: 'AGV已恢复正常运行！',
+                                    showClose: true,
+                                    duration: 5000
+                                });
+                            }
+                        }
+
+                        // 更新风险等级
+                        updateRiskLevel(phase.risk);
+
+                        // 更新安全能力
+                        idsSecurity.value = phase.idsSecurity;
+                        fwSecurity.value = phase.fwSecurity;
+
+                        // 更新资源使用
+                        idsCpuUsage.value = phase.idsCpu;
+                        idsMemoryUsage.value = phase.idsMem;
+                        fwCpuUsage.value = phase.fwCpu;
+                        fwMemoryUsage.value = phase.fwMem;
+
+                        // 更新时间数据
+                        timeData.shift();
+                        timeData.push(formatChartTime(currentSimulatedDate.value));
+
+                        // 更新数据序列
+                        idsCpuData.shift();
+                        idsMemoryData.shift();
+                        fwCpuData.shift();
+                        fwMemoryData.shift();
+
+                        idsCpuData.push(phase.idsCpu);
+                        idsMemoryData.push(phase.idsMem);
+                        fwCpuData.push(phase.fwCpu);
+                        fwMemoryData.push(phase.fwMem);
+
+                        // 更新所有图表
+                        updateAllCharts();
+
+                        // 添加攻击日志
+                        addLog('warning', phase.log);
+
+                        // 执行下一阶段，时间间隔缩短以适应1分钟的场景
+                        setTimeout(() => {
+                            executePhase(index + 1);
+                        }, 1000); // 缩短为1秒，整个过程会在12秒内视觉上完成，但日志时间跨度为60秒
+                    };
+
+                    // 开始执行第一个阶段
+                    executePhase(0);
+                };
+
+                // 处理窗口大小变化
+                const handleResize = () => {
+                    if (idsCpuChart) idsCpuChart.resize();
+                    if (idsMemoryChart) idsMemoryChart.resize();
+                    if (fwCpuChart) fwCpuChart.resize();
+                    if (fwMemoryChart) fwMemoryChart.resize();
+                };
+
+                onMounted(() => {
+                    // 延迟初始化，确保DOM已经渲染
+                    setTimeout(() => {
+                        console.log("开始初始化图表...");
+                        initTimeData();
+                        initResourceCharts();
+
+                        // 添加初始日志
+                        addLog('info', '系统启动成功，网安大模型加载完成');
+                        addLog('info', '防火墙容器正常运行中，开始监控AGV网络安全状态');
+                        advanceTime(5);
+                        addLog('info', 'AGV开始执行日常运输任务');
+
+                        // 开始模拟AGV工作
+                        startAgvWorkSimulation();
+
+                        // 定期更新图表
+                        setInterval(updateResourceCharts, 10000);
+
+                        // 处理窗口大小变化
+                        window.addEventListener('resize', handleResize);
+                    }, 500);
+                });
+
+                onUnmounted(() => {
+                    if (idsCpuChart) idsCpuChart.dispose();
+                    if (idsMemoryChart) idsMemoryChart.dispose();
+                    if (fwCpuChart) fwCpuChart.dispose();
+                    if (fwMemoryChart) fwMemoryChart.dispose();
+
+                    window.removeEventListener('resize', handleResize);
+                });
+
+                return {
+                    agvActive,
+                    idsActive,
+                    idsCpuUsage,
+                    idsMemoryUsage,
+                    fwCpuUsage,
+                    fwMemoryUsage,
+                    idsSecurity,
+                    fwSecurity,
+                    isAttacking,
+                    logs,
+                    attacksDetected,
+                    attacksBlocked,
+                    riskLevel,
+                    riskLevelColor,
+                    triggerAttack,
+                    getSecurityColor,
+                    getRiskClass,
+                    getRiskShortName
+                };
+            }
+        }).use(ElementPlus).mount('#app');
+    </script>
+</body>
+</html>

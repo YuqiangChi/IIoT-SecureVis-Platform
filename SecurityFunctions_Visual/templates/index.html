@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于大模型的网络安全功能柔性重组智能监控系统</title>
+    <!-- 从CDN加载Vue生产版本 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.prod.js"></script>
+    <!-- 从CDN加载Element Plus -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.2.0/dist/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.2.0/dist/index.full.js"></script>
+    <!-- 从CDN加载ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
+    <!-- 加载图标库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css">
+    <!-- 加载Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- 设置Vue分隔符，避免与Jinja2冲突 -->
+    <script>
+        window.onload = function() {
+            Vue.config.compilerOptions = {
+                delimiters: ['${', '}$']
+            };
+        };
+    </script>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <!-- 防御策略选择对话框 -->
+            <div class="custom-dialog" v-if="showSetupDialog">
+                <div class="custom-dialog-overlay" @click="showSetupDialog = false"></div>
+                <div class="custom-dialog-content">
+                    <div class="custom-dialog-header">
+                        <h3>选择防御策略</h3>
+                        <button class="custom-dialog-close" @click="showSetupDialog = false">&times;</button>
+                    </div>
+                    <div class="custom-dialog-body">
+                        <div class="custom-form-group">
+                            <label>防御方案</label>
+                            <select v-model="setupForm.defenseScheme">
+                                <option v-for="scheme in defenseSchemes" :key="scheme.id" :value="scheme.id">${ scheme.name }$</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="custom-dialog-footer">
+                        <button class="custom-button primary" @click="confirmSetup">确认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 全新设计的头部区域 - 更加醒目且协调 -->
+            <div class="header-container">
+                <div class="agv-status-card">
+                    <div class="agv-icon" :class="{ 'inactive': !agvActive }">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="agv-text">
+                        <span class="status-dot" :class="agvActive ? 'active' : 'inactive'"></span>
+                        ${ agvActive ? 'AGV 正常运行中' : 'AGV 异常停止' }$
+                    </div>
+                </div>
+
+                <div class="title-bar">
+                    <div class="title-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="title-text">
+                        基于大模型的网络安全功能柔性重组智能监控系统
+                    </div>
+                </div>
+
+                <div class="attack-button-container">
+                    <button class="defense-button" @click="openDefenseDialog">
+                        <i class="fas fa-shield-alt"></i>
+                        选择防御策略
+                    </button>
+                    <button class="attack-button" @click="triggerAttack" :class="{ 'pulse': !isAttacking, 'stop-attack': isAttacking }">
+                        <i class="fas" :class="isAttacking ? 'fa-stop-circle' : 'fa-bolt'"></i>
+                        ${ isAttacking ? '停止攻击' : '发起网络攻击模拟' }$
+                    </button>
+                </div>
+            </div>
+
+            <!-- 容器资源监控和安全能力展示 -->
+            <div class="content-row">
+                <!-- 左侧：容器资源监控 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-microchip"></i> 容器资源监控</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="resource-grid">
+                            <!-- IDS容器CPU使用率 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-search"></i> IDS容器CPU使用率
+                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                    </div>
+                                    <div class="resource-value">
+                                        ${ idsCpuUsage.toFixed(2) }$%
+                                        <span class="resource-limit">/ 100%</span>
+                                    </div>
+                                </div>
+                                <div id="idsCpuChart" class="resource-chart"></div>
+                            </div>
+
+                            <!-- 防火墙容器CPU使用率 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-fire-alt"></i> 防火墙容器CPU使用率
+                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                    </div>
+                                    <div class="resource-value">
+                                        ${ fwCpuUsage.toFixed(2) }$%
+                                        <span class="resource-limit">/ 100%</span>
+                                    </div>
+                                </div>
+                                <div id="fwCpuChart" class="resource-chart"></div>
+                            </div>
+
+                            <!-- 第二组IDS容器CPU使用率 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-search"></i> 第二组IDS容器CPU使用率
+                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                    </div>
+                                    <div class="resource-value">
+                                        ${ idsCpuUsage2.toFixed(2) }$%
+                                        <span class="resource-limit">/ 100%</span>
+                                    </div>
+                                </div>
+                                <div id="idsMemoryChart" class="resource-chart"></div>
+                            </div>
+
+                            <!-- 第二组防火墙容器CPU使用率 -->
+                            <div class="resource-item">
+                                <div class="resource-header">
+                                    <div class="resource-title">
+                                        <i class="fas fa-fire-alt"></i> 第二组防火墙容器CPU使用率
+                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                    </div>
+                                    <div class="resource-value">
+                                        ${ fwCpuUsage2.toFixed(2) }$%
+                                        <span class="resource-limit">/ 100%</span>
+                                    </div>
+                                </div>
+                                <div id="fwMemoryChart" class="resource-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：容器安全能力展示 -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shield-alt"></i> 容器安全能力</h3>
+                    </div>
+                    <div class="card-content">
+                        <div class="security-container">
+                            <div class="gauge-row">
+                                <!-- IDS检测率 -->
+                                <div class="gauge-item">
+                                    <div class="gauge-title">
+                                        <i class="fas fa-radar"></i> IDS检测率
+                                    </div>
+                                    <el-progress type="dashboard" :percentage="idsSecurity" :color="getSecurityColor(idsSecurity)" :stroke-width="10" :width="120"></el-progress>
+                                    <div class="gauge-status">状态: ${ idsActive ? '运行中' : '未启动' }$</div>
+                                    <div class="component-names">
+                                        <div class="component-name">${ componentNames.ids_agv }$</div>
+                                        <div class="component-name">${ componentNames.ids_scheduler }$</div>
+                                    </div>
+                                    <div class="detection-rates">
+                                        <div class="rate-item">AGV: ${ idsRate1 }$</div>
+                                        <div class="rate-item">调度: ${ idsRate2 }$</div>
+                                    </div>
+                                </div>
+
+                                <!-- 防火墙拦截能力 -->
+                                <div class="gauge-item">
+                                    <div class="gauge-title">
+                                        <i class="fas fa-ban"></i> 防火墙拦截能力
+                                    </div>
+                                    <el-progress type="dashboard" :percentage="fwSecurity" :color="getSecurityColor(fwSecurity)" :stroke-width="10" :width="120"></el-progress>
+                                    <div class="gauge-status">状态: 运行中</div>
+                                    <div class="component-names">
+                                        <div class="component-name">${ componentNames.fw_agv }$</div>
+                                        <div class="component-name">${ componentNames.fw_scheduler }$</div>
+                                    </div>
+                                    <div class="detection-rates">
+                                        <div class="rate-item">AGV: ${ fwRate1 }$</div>
+                                        <div class="rate-item">调度: ${ fwRate2 }$</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 安全统计数据 -->
+                            <div class="stats-row">
+                                <div class="stat-item">
+                                    <div class="stat-label">已检测攻击</div>
+                                    <div class="stat-value">${ attacksDetected }$</div>
+                                </div>
+
+                                <div class="stat-item">
+                                    <div class="stat-label">已阻断攻击</div>
+                                    <div class="stat-value">${ attacksBlocked }$</div>
+                                </div>
+
+                                <div class="stat-item">
+                                    <div class="stat-label">系统风险等级</div>
+                                    <div class="stat-value">
+                                        ${ riskLevel }$
+                                        <span class="risk-indicator" :class="getRiskClass()">
+                                            ${ getRiskShortName() }$
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 系统性能指标 -->
+                            <div class="performance-row">
+                                <div class="performance-item">
+                                    <div class="performance-label">正常安全数据流量</div>
+                                    <div class="performance-value">${ normalTraffic }$ <span class="unit">条/秒</span></div>
+                                </div>
+
+                                <div class="performance-item">
+                                    <div class="performance-label">安全容器QPS</div>
+                                    <div class="performance-value">${ containerQps }$</div>
+                                </div>
+
+                                <div class="performance-item">
+                                    <div class="performance-label">平均修复时间(MTTR)</div>
+                                    <div class="performance-value">${ mttr.toFixed(2) }$ <span class="unit">秒</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 网安大模型日志 - 使用精确到秒的时间戳 -->
+            <div class="log-section">
+                <div class="log-header">
+                    <h3><i class="fas fa-terminal"></i> 网安大模型日志</h3>
+                </div>
+                <div class="log-container" id="logContainer">
+                    <div v-for="(log, index) in logs" :key="index" class="log-item">
+                        <span class="timestamp">${ log.timestamp }$</span>
+                        <span class="log-type" :class="log.type">${ log.type.toUpperCase() }$</span>
+                        <span class="log-content">${ log.content }$</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 课题一组件集成区域 -->
+            <div class="integration-section">
+                <div class="integration-header">
+                    <h3><i class="fas fa-puzzle-piece"></i> 课题一组件集成区</h3>
+                    <div class="integration-controls">
+                        <button class="refresh-button" @click="loadExternalComponent">
+                            <i class="fas fa-sync-alt"></i> 刷新组件
+                        </button>
+                    </div>
+                </div>
+                <div id="externalComponentContainer" class="integration-container">
+                    <!-- 课题一组件将在这里加载 -->
+                    <div v-if="!externalComponentLoaded" class="placeholder-content">
+                        <div class="placeholder-icon">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <div class="placeholder-text">
+                            <p>此区域预留给课题一组件集成</p>
+                            <p class="placeholder-hint">课题一开发者可以将组件放置在 <code>/static/external/</code> 目录下</p>
+                        </div>
+                    </div>
+                    <div v-else id="externalComponentMount"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
