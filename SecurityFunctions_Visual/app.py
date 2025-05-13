@@ -11,8 +11,44 @@ import threading
 import json
 import re
 import os
+import numpy as np
+from datetime import datetime
 
 app = Flask(__name__)
+
+# 性能指标统计数据
+performance_stats = {
+    "traditional": {
+        "ids_detection_rates": [],  # IDS检测率
+        "fw_block_rates": [],       # 防火墙拦截率
+        "qps_values": [],           # QPS值
+        "mttr_values": []           # MTTR值
+    },
+    "flexible": {
+        "ids_detection_rates": [],  # IDS检测率
+        "fw_block_rates": [],       # 防火墙拦截率
+        "qps_values": [],           # QPS值
+        "mttr_values": []           # MTTR值
+    }
+}
+
+# 初始化一些模拟数据，以便在没有真实数据时也能生成图表
+def init_performance_stats():
+    """初始化性能统计数据，添加一些模拟数据"""
+    # 传统方案的模拟数据
+    performance_stats["traditional"]["ids_detection_rates"] = [random.uniform(45, 55) for _ in range(5)]
+    performance_stats["traditional"]["fw_block_rates"] = [random.uniform(30, 50) for _ in range(5)]
+    performance_stats["traditional"]["qps_values"] = [random.uniform(140, 200) for _ in range(5)]
+    performance_stats["traditional"]["mttr_values"] = [random.uniform(2.23, 3.18) for _ in range(5)]
+
+    # AI方案的模拟数据
+    performance_stats["flexible"]["ids_detection_rates"] = [random.uniform(85, 99) for _ in range(5)]
+    performance_stats["flexible"]["fw_block_rates"] = [random.uniform(80, 98) for _ in range(5)]
+    performance_stats["flexible"]["qps_values"] = [random.uniform(800, 1000) for _ in range(5)]
+    performance_stats["flexible"]["mttr_values"] = [random.uniform(0.2, 0.9) for _ in range(5)]
+
+# 初始化性能统计数据
+init_performance_stats()
 
 # 全局状态变量
 simulator_state = {
@@ -61,6 +97,54 @@ simulator_state = {
 def index():
     """渲染主页"""
     return render_template('index.html')
+
+@app.route('/performance')
+def performance():
+    """渲染性能对比页面"""
+    return render_template('performance.html')
+
+@app.route('/api/performance-stats', methods=['GET'])
+def get_performance_stats():
+    """获取性能统计数据"""
+    # 计算平均值
+    stats = {
+        "traditional": {
+            "ids_detection_rate": 0,
+            "fw_block_rate": 0,
+            "qps": 0,
+            "mttr": 0
+        },
+        "flexible": {
+            "ids_detection_rate": 0,
+            "fw_block_rate": 0,
+            "qps": 0,
+            "mttr": 0
+        }
+    }
+
+    # 计算传统方案的平均值
+    trad = performance_stats["traditional"]
+    if trad["ids_detection_rates"]:
+        stats["traditional"]["ids_detection_rate"] = sum(trad["ids_detection_rates"]) / len(trad["ids_detection_rates"])
+    if trad["fw_block_rates"]:
+        stats["traditional"]["fw_block_rate"] = sum(trad["fw_block_rates"]) / len(trad["fw_block_rates"])
+    if trad["qps_values"]:
+        stats["traditional"]["qps"] = sum(trad["qps_values"]) / len(trad["qps_values"])
+    if trad["mttr_values"]:
+        stats["traditional"]["mttr"] = sum(trad["mttr_values"]) / len(trad["mttr_values"])
+
+    # 计算AI方案的平均值
+    flex = performance_stats["flexible"]
+    if flex["ids_detection_rates"]:
+        stats["flexible"]["ids_detection_rate"] = sum(flex["ids_detection_rates"]) / len(flex["ids_detection_rates"])
+    if flex["fw_block_rates"]:
+        stats["flexible"]["fw_block_rate"] = sum(flex["fw_block_rates"]) / len(flex["fw_block_rates"])
+    if flex["qps_values"]:
+        stats["flexible"]["qps"] = sum(flex["qps_values"]) / len(flex["qps_values"])
+    if flex["mttr_values"]:
+        stats["flexible"]["mttr"] = sum(flex["mttr_values"]) / len(flex["mttr_values"])
+
+    return jsonify(stats)
 
 @app.route('/static/external/<path:filename>')
 def external_static(filename):
@@ -613,6 +697,10 @@ def get_status():
 
             add_log(log_type, random.choice(log_contents))
 
+    # 收集性能数据
+    if simulator_state["is_attacking"]:
+        collect_performance_data()
+
     # 确保前端能够正确显示日志
     response_data = simulator_state.copy()
     response_data["logs"] = simulator_state["attack_logs"]
@@ -1116,6 +1204,49 @@ def add_log(log_type, content):
         "type": log_type,
         "content": content
     })
+    # 限制日志数量，避免过多
+    if len(simulator_state["attack_logs"]) > 100:
+        simulator_state["attack_logs"] = simulator_state["attack_logs"][-100:]
+
+def collect_performance_data():
+    """收集性能指标数据"""
+    if not simulator_state["is_attacking"]:
+        return  # 只在攻击状态下收集数据
+
+    scheme = simulator_state["defense_scheme"]
+
+    # 解析IDS检测率和防火墙拦截率
+    try:
+        # 计算AGV和调度系统的平均检测率
+        ids_rate_1 = simulator_state["ids_rate_1"]
+        ids_rate_2 = simulator_state["ids_rate_2"]
+
+        if "%" in ids_rate_1 and "%" in ids_rate_2:
+            ids_rate_1_value = float(ids_rate_1.replace("%", ""))
+            ids_rate_2_value = float(ids_rate_2.replace("%", ""))
+            avg_ids_rate = (ids_rate_1_value + ids_rate_2_value) / 2
+            performance_stats[scheme]["ids_detection_rates"].append(avg_ids_rate)
+
+        # 计算AGV和调度系统的平均拦截率
+        fw_rate_1 = simulator_state["fw_rate_1"]
+        fw_rate_2 = simulator_state["fw_rate_2"]
+
+        if "%" in fw_rate_1 and "%" in fw_rate_2:
+            fw_rate_1_value = float(fw_rate_1.replace("%", ""))
+            fw_rate_2_value = float(fw_rate_2.replace("%", ""))
+            avg_fw_rate = (fw_rate_1_value + fw_rate_2_value) / 2
+            performance_stats[scheme]["fw_block_rates"].append(avg_fw_rate)
+    except Exception as e:
+        print(f"解析检测率/拦截率时出错: {e}")
+
+    # 收集QPS和MTTR
+    performance_stats[scheme]["qps_values"].append(simulator_state["container_qps"])
+    performance_stats[scheme]["mttr_values"].append(simulator_state["mttr"])
+
+    # 限制数据点数量，保留最近的100个
+    for key in ["ids_detection_rates", "fw_block_rates", "qps_values", "mttr_values"]:
+        if len(performance_stats[scheme][key]) > 100:
+            performance_stats[scheme][key] = performance_stats[scheme][key][-100:]
 
 def generate_attack_phases():
     """生成攻击阶段"""
