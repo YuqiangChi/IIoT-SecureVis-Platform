@@ -1,6 +1,7 @@
 // 使用Vue 3 Composition API
 const { createApp, ref, computed, onMounted, onUnmounted, nextTick } = Vue;
 
+// 创建Vue应用
 const app = createApp({
     setup() {
         // 状态数据
@@ -9,6 +10,7 @@ const app = createApp({
         const idsSecurity = ref(0);    // IDS初始检测率为0
         const fwSecurity = ref(85);    // 防火墙初始拦截能力为85%
         const isAttacking = ref(false);
+        const isInitializingAttack = ref(false); // 攻击初始化状态
         const logs = ref([]);
 
         // 外部组件状态
@@ -86,9 +88,53 @@ const app = createApp({
 
         // 获取安全能力的颜色
         const getSecurityColor = (value) => {
-            if (value < 30) return '#dc2626';
-            if (value < 70) return '#d97706';
-            return '#059669';
+            // 待机状态（值为10）显示为蓝色
+            if (value === 10) return '#3b82f6'; // 蓝色，表示待机状态
+
+            // 红色到黄色到绿色的渐变，更加鲜明的颜色
+            if (value < 20) return '#ff0000'; // 纯红色
+            if (value < 30) return '#ff3300'; // 红橙色
+            if (value < 40) return '#ff6600'; // 橙色
+            if (value < 50) return '#ff9900'; // 橙黄色
+            if (value < 60) return '#ffcc00'; // 黄色
+            if (value < 70) return '#ccff00'; // 黄绿色
+            if (value < 80) return '#66ff00'; // 浅绿色
+            if (value < 90) return '#00ff66'; // 青绿色
+            return '#00cc00'; // 纯绿色
+        };
+
+        // 进度条百分比格式化函数
+        const percentFormat = (percentage) => {
+            return `${percentage.toFixed(0)}%`;
+        };
+
+        // 从字符串中提取数值
+        const parseRate = (rateStr) => {
+            // 如果是N/A（无攻击）状态，返回一个小的默认值，使仪表盘显示为待机状态
+            if (!rateStr || typeof rateStr !== 'string' || rateStr.includes('N/A')) return 10;
+
+            // 尝试匹配百分比数字，如"45.67%"或"45%"
+            const match = rateStr.match(/(\d+(?:\.\d+)?)/);
+            const value = match ? parseFloat(match[1]) : 0;
+
+            // 确保值在0-100之间
+            return Math.min(100, Math.max(0, value));
+        };
+
+        // 调试函数，用于检查仪表盘数据
+        const debugDashboard = () => {
+            console.log("IDS检测率数据:", {
+                idsRate1: idsRate1.value,
+                idsRate2: idsRate2.value,
+                parsedIdsRate1: parseRate(idsRate1.value),
+                parsedIdsRate2: parseRate(idsRate2.value)
+            });
+            console.log("防火墙拦截率数据:", {
+                fwRate1: fwRate1.value,
+                fwRate2: fwRate2.value,
+                parsedFwRate1: parseRate(fwRate1.value),
+                parsedFwRate2: parseRate(fwRate2.value)
+            });
         };
 
         // 初始化时间数据
@@ -441,6 +487,7 @@ const app = createApp({
                     const response = await axios.post('/api/trigger-attack');
                     if (response.data.status === 'success') {
                         isAttacking.value = false;
+                        isInitializingAttack.value = false; // 重置攻击初始化状态
                         ElementPlus.ElMessage({
                             type: 'success',
                             message: '攻击已停止，系统恢复中...',
@@ -465,6 +512,9 @@ const app = createApp({
                     agv_traffic: setupForm.value.agvTraffic,
                     scheduler_traffic: setupForm.value.schedulerTraffic
                 });
+
+                // 设置攻击初始化状态
+                isInitializingAttack.value = true;
 
                 // 然后触发攻击
                 const response = await axios.post('/api/trigger-attack');
@@ -529,6 +579,16 @@ const app = createApp({
                     idsRate2.value = data.ids_rate_2;
                     fwRate1.value = data.fw_rate_1;
                     fwRate2.value = data.fw_rate_2;
+
+                    // 如果收到了有效的检测率数据（不是N/A），则重置攻击初始化状态
+                    if (isInitializingAttack.value &&
+                        data.ids_rate_1 && !data.ids_rate_1.includes('N/A') &&
+                        data.fw_rate_1 && !data.fw_rate_1.includes('N/A')) {
+                        isInitializingAttack.value = false;
+                    }
+
+                    // 调试仪表盘数据
+                    debugDashboard();
 
                     // 更新组件名称
                     componentNames.value = data.component_names;
@@ -774,6 +834,7 @@ const app = createApp({
             idsSecurity,
             fwSecurity,
             isAttacking,
+            isInitializingAttack,
             logs,
             attacksDetected,
             attacksBlocked,
@@ -812,6 +873,8 @@ const app = createApp({
             getRiskClass,
             getRiskShortName,
             getSecurityColor,
+            parseRate,
+            percentFormat,
             handleAttackTypeChange,
             confirmSetup,
             triggerAttack,
@@ -824,6 +887,14 @@ const app = createApp({
 app.config.compilerOptions = {
     delimiters: ['${', '}$']
 };
+
+// 使用Element Plus
+if (window.ElementPlus) {
+    app.use(ElementPlus);
+    console.log('Element Plus 已注册');
+} else {
+    console.error('Element Plus 未加载');
+}
 
 // 挂载应用
 app.mount('#app');

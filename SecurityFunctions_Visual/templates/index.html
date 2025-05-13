@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>基于大模型的网络安全功能柔性重组智能监控系统</title>
-    <!-- 从CDN加载Vue生产版本 -->
-    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.prod.js"></script>
+    <!-- 从CDN加载Vue开发版本 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.js"></script>
     <!-- 从CDN加载Element Plus -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.2.0/dist/index.css">
-    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.2.0/dist/index.full.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.3.14/dist/index.css">
+    <script src="https://cdn.jsdelivr.net/npm/element-plus@2.3.14/dist/index.full.js"></script>
     <!-- 从CDN加载ECharts -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.2/dist/echarts.min.js"></script>
     <!-- 加载图标库 -->
@@ -20,9 +20,8 @@
     <!-- 设置Vue分隔符，避免与Jinja2冲突 -->
     <script>
         window.onload = function() {
-            Vue.config.compilerOptions = {
-                delimiters: ['${', '}$']
-            };
+            // Vue 3的配置方式不同于Vue 2
+            // 在main.js中设置分隔符
         };
     </script>
 </head>
@@ -97,8 +96,9 @@
                             <div class="resource-item">
                                 <div class="resource-header">
                                     <div class="resource-title">
-                                        <i class="fas fa-search"></i> IDS容器CPU使用率
-                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                        <i class="fas fa-search"></i>
+                                        <span class="component-name">${ componentNames.ids_agv }$</span> CPU使用率
+                                        <span class="resource-subtitle">(AGV系统入侵检测)</span>
                                     </div>
                                     <div class="resource-value">
                                         ${ idsCpuUsage.toFixed(2) }$%
@@ -112,8 +112,9 @@
                             <div class="resource-item">
                                 <div class="resource-header">
                                     <div class="resource-title">
-                                        <i class="fas fa-fire-alt"></i> 防火墙容器CPU使用率
-                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                        <i class="fas fa-fire-alt"></i>
+                                        <span class="component-name">${ componentNames.fw_agv }$</span> CPU使用率
+                                        <span class="resource-subtitle">(AGV系统防火墙)</span>
                                     </div>
                                     <div class="resource-value">
                                         ${ fwCpuUsage.toFixed(2) }$%
@@ -127,8 +128,9 @@
                             <div class="resource-item">
                                 <div class="resource-header">
                                     <div class="resource-title">
-                                        <i class="fas fa-search"></i> 第二组IDS容器CPU使用率
-                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                        <i class="fas fa-search"></i>
+                                        <span class="component-name">${ componentNames.ids_scheduler }$</span> CPU使用率
+                                        <span class="resource-subtitle">(调度系统入侵检测)</span>
                                     </div>
                                     <div class="resource-value">
                                         ${ idsCpuUsage2.toFixed(2) }$%
@@ -142,8 +144,9 @@
                             <div class="resource-item">
                                 <div class="resource-header">
                                     <div class="resource-title">
-                                        <i class="fas fa-fire-alt"></i> 第二组防火墙容器CPU使用率
-                                        <span class="resource-subtitle">(AGV+调度系统)</span>
+                                        <i class="fas fa-fire-alt"></i>
+                                        <span class="component-name">${ componentNames.fw_scheduler }$</span> CPU使用率
+                                        <span class="resource-subtitle">(调度系统防火墙)</span>
                                     </div>
                                     <div class="resource-value">
                                         ${ fwCpuUsage2.toFixed(2) }$%
@@ -167,34 +170,62 @@
                                 <!-- IDS检测率 -->
                                 <div class="gauge-item">
                                     <div class="gauge-title">
-                                        <i class="fas fa-radar"></i> IDS检测率
-                                    </div>
-                                    <el-progress type="dashboard" :percentage="idsSecurity" :color="getSecurityColor(idsSecurity)" :stroke-width="10" :width="120"></el-progress>
-                                    <div class="gauge-status">状态: ${ idsActive ? '运行中' : '未启动' }$</div>
-                                    <div class="component-names">
-                                        <div class="component-name">${ componentNames.ids_agv }$</div>
-                                        <div class="component-name">${ componentNames.ids_scheduler }$</div>
+                                        <i class="fas fa-radar"></i> 入侵检测系统(IDS)检测率
                                     </div>
                                     <div class="detection-rates">
-                                        <div class="rate-item">AGV: ${ idsRate1 }$</div>
-                                        <div class="rate-item">调度: ${ idsRate2 }$</div>
+                                        <div class="rate-item">
+                                            <div class="rate-label">
+                                                <span class="component-name">${ componentNames.ids_agv }$</span>
+                                            </div>
+                                            <div class="rate-gauge">
+                                                <el-progress type="dashboard" :percentage="isAttacking ? (isInitializingAttack ? 0 : parseRate(idsRate1)) : 0" :color="isAttacking ? (isInitializingAttack ? '#3b82f6' : getSecurityColor(parseRate(idsRate1))) : '#CCCCCC'" :stroke-width="10" :width="100" class="rate-dashboard" :status="isAttacking ? (isInitializingAttack ? 'warning' : '') : 'exception'"></el-progress>
+                                                <div class="rate-value" v-if="isAttacking && !isInitializingAttack">${ idsRate1 }$</div>
+                                                <div class="rate-value loading-text" v-else-if="isAttacking && isInitializingAttack">容器启动中...</div>
+                                                <div class="rate-value disabled-text" v-else>N/A</div>
+                                            </div>
+                                        </div>
+                                        <div class="rate-item">
+                                            <div class="rate-label">
+                                                <span class="component-name">${ componentNames.ids_scheduler }$</span>
+                                            </div>
+                                            <div class="rate-gauge">
+                                                <el-progress type="dashboard" :percentage="isAttacking ? (isInitializingAttack ? 0 : parseRate(idsRate2)) : 0" :color="isAttacking ? (isInitializingAttack ? '#3b82f6' : getSecurityColor(parseRate(idsRate2))) : '#CCCCCC'" :stroke-width="10" :width="100" class="rate-dashboard" :status="isAttacking ? (isInitializingAttack ? 'warning' : '') : 'exception'"></el-progress>
+                                                <div class="rate-value" v-if="isAttacking && !isInitializingAttack">${ idsRate2 }$</div>
+                                                <div class="rate-value loading-text" v-else-if="isAttacking && isInitializingAttack">容器启动中...</div>
+                                                <div class="rate-value disabled-text" v-else>N/A</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- 防火墙拦截能力 -->
                                 <div class="gauge-item">
                                     <div class="gauge-title">
-                                        <i class="fas fa-ban"></i> 防火墙拦截能力
-                                    </div>
-                                    <el-progress type="dashboard" :percentage="fwSecurity" :color="getSecurityColor(fwSecurity)" :stroke-width="10" :width="120"></el-progress>
-                                    <div class="gauge-status">状态: 运行中</div>
-                                    <div class="component-names">
-                                        <div class="component-name">${ componentNames.fw_agv }$</div>
-                                        <div class="component-name">${ componentNames.fw_scheduler }$</div>
+                                        <i class="fas fa-ban"></i> 防火墙(Firewall)拦截能力
                                     </div>
                                     <div class="detection-rates">
-                                        <div class="rate-item">AGV: ${ fwRate1 }$</div>
-                                        <div class="rate-item">调度: ${ fwRate2 }$</div>
+                                        <div class="rate-item">
+                                            <div class="rate-label">
+                                                <span class="component-name">${ componentNames.fw_agv }$</span>
+                                            </div>
+                                            <div class="rate-gauge">
+                                                <el-progress type="dashboard" :percentage="isAttacking ? (isInitializingAttack ? 0 : parseRate(fwRate1)) : 0" :color="isAttacking ? (isInitializingAttack ? '#3b82f6' : getSecurityColor(parseRate(fwRate1))) : '#CCCCCC'" :stroke-width="10" :width="100" class="rate-dashboard" :status="isAttacking ? (isInitializingAttack ? 'warning' : '') : 'exception'"></el-progress>
+                                                <div class="rate-value" v-if="isAttacking && !isInitializingAttack">${ fwRate1 }$</div>
+                                                <div class="rate-value loading-text" v-else-if="isAttacking && isInitializingAttack">容器启动中...</div>
+                                                <div class="rate-value disabled-text" v-else>N/A</div>
+                                            </div>
+                                        </div>
+                                        <div class="rate-item">
+                                            <div class="rate-label">
+                                                <span class="component-name">${ componentNames.fw_scheduler }$</span>
+                                            </div>
+                                            <div class="rate-gauge">
+                                                <el-progress type="dashboard" :percentage="isAttacking ? (isInitializingAttack ? 0 : parseRate(fwRate2)) : 0" :color="isAttacking ? (isInitializingAttack ? '#3b82f6' : getSecurityColor(parseRate(fwRate2))) : '#CCCCCC'" :stroke-width="10" :width="100" class="rate-dashboard" :status="isAttacking ? (isInitializingAttack ? 'warning' : '') : 'exception'"></el-progress>
+                                                <div class="rate-value" v-if="isAttacking && !isInitializingAttack">${ fwRate2 }$</div>
+                                                <div class="rate-value loading-text" v-else-if="isAttacking && isInitializingAttack">容器启动中...</div>
+                                                <div class="rate-value disabled-text" v-else>N/A</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

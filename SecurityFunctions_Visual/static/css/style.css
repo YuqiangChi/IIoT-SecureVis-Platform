@@ -329,13 +329,22 @@ body {
     display: flex;
     justify-content: space-around;
     flex: 1;
-    align-items: center;
+    align-items: flex-start;
 }
 
 .gauge-item {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 48%;
+}
+
+/* 调整检测率区域样式 */
+.detection-rates {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 10px;
 }
 
 .gauge-title {
@@ -361,33 +370,368 @@ body {
 }
 
 .component-name {
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 600;
     color: var(--primary-color);
-    background-color: rgba(30, 58, 138, 0.05);
-    padding: 2px 6px;
+    background-color: rgba(30, 58, 138, 0.1);
+    padding: 3px 8px;
     border-radius: 4px;
-    margin-bottom: 4px;
+    margin: 0 4px 4px 0;
     text-align: center;
-    width: 90%;
+    display: inline-block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    border: 1px solid rgba(30, 58, 138, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.component-name:hover {
+    background-color: rgba(30, 58, 138, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .detection-rates {
     display: flex;
     justify-content: space-around;
-    margin-top: 8px;
+    margin-top: 15px;
     width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .rate-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 5px;
+    min-width: 120px;
+    width: 45%;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.rate-item:hover {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.rate-label {
     font-size: 12px;
     color: var(--secondary-color);
-    background-color: rgba(37, 99, 235, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.rate-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 5px;
+}
+
+/* 自定义Element Plus的dashboard组件样式 */
+.el-progress--dashboard {
+    margin: 0 auto;
+    display: block !important;
+}
+
+.el-progress--dashboard .el-progress__text {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #333 !important;
+}
+
+.el-progress--dashboard .el-progress-circle {
+    transition: all 0.5s ease;
+    margin: 0 auto !important;
+}
+
+.el-progress--dashboard:hover .el-progress-circle {
+    transform: scale(1.05);
+}
+
+/* 确保仪表盘在容器中居中 */
+.rate-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+/* 确保仪表盘文本显示 */
+.rate-dashboard .el-progress__text,
+.main-dashboard .el-progress__text {
+    display: block !important;
+}
+
+/* 自定义仪表盘样式 */
+.rate-dashboard {
+    position: relative;
+    margin: 0 auto;
+}
+
+.rate-dashboard .el-progress__text {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #333 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.rate-dashboard .el-progress-circle {
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.rate-dashboard:hover .el-progress-circle {
+    transform: scale(1.08);
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+/* 确保仪表盘显示 */
+.el-progress--circle .el-progress__text {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
     text-align: center;
+    margin: 0;
+    transform: translateY(-50%);
+}
+
+.el-progress--circle .el-progress-circle {
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+}
+
+/* 主仪表盘样式 */
+.main-dashboard {
+    position: relative;
+    margin: 10px auto;
+    display: block;
+}
+
+.main-dashboard .el-progress__text {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: #333 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.main-dashboard .el-progress-circle {
+    transition: all 0.4s ease;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+.main-dashboard:hover .el-progress-circle {
+    transform: scale(1.05);
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.2));
+}
+
+/* 确保仪表盘圆环显示 */
+.el-progress-circle__track {
+    stroke: #e5e7eb;
+    stroke-width: 4;
+}
+
+.el-progress-circle__path {
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.6s ease, stroke 0.6s ease;
+}
+
+/* 强制显示仪表盘 */
+.el-progress-circle {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* 确保仪表盘文本显示 */
+.el-progress__text {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* 直接修改Element Plus的仪表盘样式 */
+.el-progress--dashboard {
+    display: block !important;
+}
+
+.el-progress--dashboard .el-progress__text {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: #333 !important;
+}
+
+.el-progress--dashboard .el-progress-circle {
+    margin: 0 auto !important;
+}
+
+/* 添加脉冲动画效果 */
+.rate-dashboard .el-progress-circle__path {
+    stroke-linecap: round;
+}
+
+/* 添加闪光效果 */
+.main-dashboard .el-progress-circle__path {
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+}
+
+/* 确保仪表盘容器样式 */
+.rate-gauge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100px;
+    position: relative;
+    margin-bottom: 10px;
+}
+
+/* 仪表盘容器 */
+.dashboard-container {
+    width: 100%;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+/* 主仪表盘容器 */
+.main-dashboard-container {
+    width: 100%;
+    height: 140px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 10px 0;
+}
+
+@keyframes dash {
+    from {
+        stroke-dasharray: 1, 200;
+        stroke-dashoffset: 0;
+    }
+    to {
+        stroke-dasharray: 89, 200;
+        stroke-dashoffset: -35;
+    }
+}
+
+/* 自定义线性进度条样式 */
+.custom-progress {
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.custom-progress .el-progress-bar__outer {
+    border-radius: 10px !important;
+    background-color: #f3f4f6 !important;
+    overflow: hidden;
+    height: 15px !important;
+}
+
+.custom-progress .el-progress-bar__inner {
+    border-radius: 10px !important;
+    transition: width 0.5s ease, background-color 0.5s ease;
+    background-image: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        transparent 75%,
+        transparent
+    ) !important;
+    background-size: 15px 15px !important;
+}
+
+.custom-progress:hover .el-progress-bar__inner {
+    filter: brightness(1.1);
+    animation: progress-bar-stripes 1.5s linear infinite;
+}
+
+/* 添加动画效果 */
+@keyframes progress-bar-stripes {
+    from {
+        background-position: 20px 0;
+    }
+    to {
+        background-position: 0 0;
+    }
+}
+
+/* 进度条文本标签 */
+.progress-text-label {
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes progress-bar-stripes {
+    from {
+        background-position: 20px 0;
+    }
+    to {
+        background-position: 0 0;
+    }
+}
+
+.rate-value {
+    font-size: 12px;
+    color: var(--dark-color);
+    margin-top: 8px;
+    text-align: center;
+    min-height: 14px;
+    background-color: rgba(0, 0, 0, 0.03);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-weight: 600;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.disabled-text {
+    color: #999;
+    font-style: normal;
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.loading-text {
+    color: #3b82f6;
+    font-style: normal;
+    background-color: rgba(59, 130, 246, 0.05);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+.rate-value:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
 }
 
 .stats-row {
